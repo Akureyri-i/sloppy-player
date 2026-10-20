@@ -1,0 +1,58 @@
+name: An arrangement sounds wrong
+description: The program works, but a piece comes out badly arranged.
+labels: [arrangement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These reports help most with the score attached. Please check "Which scores work best?" in the README FAQ first: very dense pieces, many-track scores and live-recorded MIDI are known to be hard.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Arrangement
+      options:
+        - Faithful
+        - Guitar style
+        - As written
+    validations:
+      required: true
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What sounds wrong?
+      multiple: true
+      options:
+        - The melody is missing or hard to hear
+        - Notes are in the wrong octave
+        - Too crowded
+        - Too sparse
+        - Timing or rhythm
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where in the piece
+      placeholder: 1:20 to 1:35
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Settings you changed (Simplify, Speed, tracks), and what you expected.
+  - type: textarea
+    id: files
+    attributes:
+      label: Score and analysis report
+      description: |
+        Drag the score here (zip it if GitHub refuses the file type).
+        Settings → Arrangement → Export analysis report, and attach the .json. It contains the score's notes and its file path.
+    validations:
+      required: true

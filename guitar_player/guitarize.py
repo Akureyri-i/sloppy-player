@@ -73,7 +73,7 @@ def role_probabilities(song, notes, melody_source=None):
         out = np.zeros_like(p)
         out[[by_id[int(i)] for i in encoded.ids]] = p
         return out, 'model'
-    except ModelUnavailable:   # no model installed: the rule still gives a usable line
+    except (ModelUnavailable, ImportError):   # no model or no PyTorch: the rule still gives a usable line
         return rule_roles(notes), 'rule'
 
 

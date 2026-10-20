@@ -1,0 +1,20 @@
+name: Feature request
+description: An idea for something Sloppy Player could do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or problem, not only the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+  - type: textarea
+    id: other
+    attributes:
+      label: Anything else
+      description: Examples, screenshots, how other programs handle it.

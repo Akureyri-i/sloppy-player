@@ -3,6 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -75,6 +76,16 @@ class LineTests(unittest.TestCase):
 
 
 class ModeTests(unittest.TestCase):
+    def test_cached_features_without_pytorch_fall_back_to_the_rule(self):
+        s = song([note(i*2+j, p, i*.5) for i in range(8) for j, p in enumerate((48+i % 3, 72+i % 4))])
+
+        def no_torch(*_):
+            raise ImportError("No module named 'torch'")
+        features = lambda song_, notes: (mock.Mock(ids=np.array([n.id for n in notes])), np.zeros((len(notes), 768), np.float32), {})
+        with mock.patch.object(guitarize, 'get_features', features), mock.patch.object(guitarize, 'predict_roles', no_torch):
+            _, backend = guitarize.role_probabilities(s, s.notes)
+        self.assertEqual(backend, 'rule')
+
     def piece(self):
         notes = []
         for bar in range(8):

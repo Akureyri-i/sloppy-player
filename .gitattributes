@@ -1,0 +1,7 @@
+# Text is stored with LF and checked out with LF on every system.
+* text=auto eol=lf
+*.png binary
+*.gif binary
+*.jpg binary
+*.pkl binary
+*.safetensors binary

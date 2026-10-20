@@ -2,6 +2,7 @@ from dataclasses import replace
 import json
 from pathlib import Path
 import tempfile
+import importlib.util
 import unittest
 from unittest.mock import patch
 
@@ -130,7 +131,8 @@ class JointTests(unittest.TestCase):
 
 
 class RealModelTests(unittest.TestCase):
-    @unittest.skipUnless(Path('models/m2bert/voice_edges.safetensors').exists(),'local head not installed')
+    @unittest.skipUnless(Path('models/m2bert/voice_edges.safetensors').exists() and importlib.util.find_spec('torch'),
+                         'trained head or PyTorch not installed')
     def test_cached_features_use_stable_scores_after_restart(self):
         import torch
         from guitar_player.voice_edges import load_edge_head

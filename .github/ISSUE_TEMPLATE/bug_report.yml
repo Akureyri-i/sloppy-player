@@ -1,0 +1,58 @@
+name: Bug report
+description: Something does not work as the user guide describes.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. If the problem is how a piece *sounds* after arranging, the "An arrangement sounds wrong" form fits better.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: From the zip name, e.g. SloppyPlayer-1.0.0-win64.zip.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - Opening or pasting a score
+        - Arranging (error, freeze, very slow)
+        - Playing in Roblox (keys, timing, hotkeys)
+        - Listening window
+        - Export
+        - Settings or interface
+        - Starting the program
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include any error message as text.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Choose ...
+        3. ...
+  - type: textarea
+    id: files
+    attributes:
+      label: Score and analysis report
+      description: |
+        Drag the score here if you can (zip it if GitHub refuses the file type).
+        Optional: Settings → Arrangement → Export analysis report. The report contains the score's notes and its file path.

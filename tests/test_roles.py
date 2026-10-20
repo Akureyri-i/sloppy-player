@@ -1,6 +1,7 @@
 """Voice roles (guitar_player.roles): onset groups, geometry, rule fallback, head round trip."""
 import json
 import tempfile
+import importlib.util
 import unittest
 from pathlib import Path
 
@@ -35,6 +36,7 @@ class RoleTests(unittest.TestCase):
         self.assertEqual([i for i in range(7) if p[i, 0] == 1], [2, 5])
         self.assertTrue(np.allclose(p.sum(1), 1))
 
+    @unittest.skipUnless(importlib.util.find_spec('torch'), 'PyTorch not installed')
     def test_head_round_trip(self):
         import torch
         from safetensors.torch import save_file

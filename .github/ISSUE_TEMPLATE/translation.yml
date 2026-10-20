@@ -1,0 +1,38 @@
+name: Translation
+description: A wrong, unclear or missing text in one of the interface languages.
+labels: [translation]
+body:
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - English
+        - Español
+        - Português (Brasil)
+        - Русский
+        - Bahasa Indonesia
+        - 简体中文
+        - 繁體中文
+        - A new language
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where it appears
+      placeholder: Settings → Keys, the hold time label
+  - type: textarea
+    id: current
+    attributes:
+      label: Current text
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested text
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Pull requests are welcome too: the texts are in `guitar_player/locales/`. See CONTRIBUTING.md.

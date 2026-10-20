@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/Akureyri-i/sloppy-player/discussions
+    about: How to use it, which scores to try, show your arrangements.
+  - name: User guide
+    url: https://github.com/Akureyri-i/sloppy-player/blob/main/USER_GUIDE.md
+    about: Every setting explained.
+  - name: FAQ
+    url: https://github.com/Akureyri-i/sloppy-player#faq
+    about: SmartScreen, slow first analysis, which scores work best.
