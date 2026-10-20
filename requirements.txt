@@ -1,0 +1,6 @@
+mido==1.3.3
+keyboard==0.13.5
+numpy>=1.26,<3
+ortools==9.14.6206
+PySide6-Essentials==6.11.2
+tinysoundfont==0.3.7

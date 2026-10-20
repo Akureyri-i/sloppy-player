@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+<!-- Sloppy Player: a guitar pick shaped like a keycap, with a note on it. -->
+<g transform="rotate(-9 128 128) translate(0 -4)">
+ <path d="M128 236 C58 174 20 104 34 58 C48 18 208 18 222 58 C236 104 198 174 128 236 Z" transform="translate(0 16)" fill="#2b2d8f"/>
+ <path d="M128 236 C58 174 20 104 34 58 C48 18 208 18 222 58 C236 104 198 174 128 236 Z" fill="#4a4ed3"/>
+ <path d="M128 236 C58 174 20 104 34 58 C48 18 208 18 222 58 C236 104 198 174 128 236 Z" transform="translate(128 118) scale(0.76) translate(-128 -128)" fill="#8d91f6"/>
+ <path d="M128 236 C58 174 20 104 34 58 C48 18 208 18 222 58 C236 104 198 174 128 236 Z" transform="translate(133 124) scale(0.76) translate(-128 -128)" fill="#6f73ee"/>
+ <g transform="translate(134.5 120) scale(0.82) translate(-128 -128)" fill="#ffffff">
+  <ellipse cx="106" cy="162" rx="26" ry="19" transform="rotate(-20 106 162)"/>
+  <path d="M121.3 160 V76 Q121.3 70 127.3 70 H131.3 V160 Z"/>
+  <path d="M127 70 H131.3 C146 84 174 94 167 134 C161 114 148 106 131.3 104 Z"/>
+ </g>
+</g>
+</svg>

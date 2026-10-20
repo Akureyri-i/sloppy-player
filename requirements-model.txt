@@ -1,0 +1,3 @@
+# Install torch GPU/CPU separately with tools/setup_model.py --install.
+transformers==4.51.3
+safetensors==0.6.2
