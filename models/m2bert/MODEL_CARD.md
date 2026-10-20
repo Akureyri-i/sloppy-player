@@ -5,7 +5,7 @@ Sloppy Player uses a pre-trained music encoder and two small models trained for 
 ## M2BERT encoder
 
 - Jun-You Wang, Li Su. *Improving BERT for symbolic music understanding using token denoising and pianoroll prediction.* ISMIR 2025. Code <https://github.com/york135/M2BERT>, weights <https://github.com/york135/M2BERT_files>.
-- Official checkpoint `M2BERT_pretrained_model/model_best.ckpt`, 749,258,690 bytes, SHA-256 `cf15015f8ed1bdf94983812ffb3229e51548b676dc5ceda76b91a09056b40f63`. The release carries `encoder.safetensors`, its `state_dict` only (`tools/export_encoder_weights.py`); both give identical features.
+- Official checkpoint `M2BERT_pretrained_model/model_best.ckpt`, 749,258,690 bytes, SHA-256 `cf15015f8ed1bdf94983812ffb3229e51548b676dc5ceda76b91a09056b40f63`. The release carries `encoder.onnx`, the network exported to ONNX (`tools/export_onnx.py`) and run with ONNX Runtime; its features match PyTorch's to within 1e-4 (float rounding), and the two small heads are exported the same way.
 - Vocabulary `CP.pkl` (SHA-256 `a84a4aeb14201af952acffa46d7dd04f8780a398d76af043f2f057a5c431885d`) and the ModernBERT-base `config.json` (SHA-256 `1609d59e627c33eaed524b4f01e546d42e84190a079a5a5ded84b212c41c324f`), set to M2BERT's 12 layers, 768 dimensions and four-attribute embedding. All weight keys are checked strictly.
 - Frozen: not fine-tuned. Notes are read through a quantised view (bar, 16 positions per bar, 64 durations, pitch 22–107) in 1,024-note windows overlapping by 256; the original note times and pitches are kept separately.
 - Distributed with the author's permission; see [THIRD_PARTY.md](../../THIRD_PARTY.md).

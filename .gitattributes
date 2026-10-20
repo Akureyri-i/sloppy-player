@@ -5,3 +5,4 @@
 *.jpg binary
 *.pkl binary
 *.safetensors binary
+*.onnx binary

@@ -1,0 +1,5 @@
+# Only to convert the checkpoint to ONNX (tools/export_onnx.py) and to train the heads.
+# PyTorch is installed separately: pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+transformers==4.51.3
+safetensors==0.6.2
+onnx==1.23.2

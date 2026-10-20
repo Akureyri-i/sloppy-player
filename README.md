@@ -14,7 +14,7 @@ Arranged for the game's six strings, played with millisecond timing.
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-4a4ed3?style=flat-square)
 ![Vibe coded](https://img.shields.io/badge/vibe-coded-8d91f6?style=flat-square)
 
-[![Download](https://img.shields.io/badge/Download-SloppyPlayer%201.0.0-4a4ed3?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Akureyri-i/sloppy-player/releases/latest)
+[![Download](https://img.shields.io/badge/Download-SloppyPlayer%201.1.0-4a4ed3?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Akureyri-i/sloppy-player/releases/latest)
 [![User guide](https://img.shields.io/badge/User%20guide-read-6f73ee?style=for-the-badge)](USER_GUIDE.md)
 [![简体中文](https://img.shields.io/badge/简体中文-阅读-8d91f6?style=for-the-badge)](README.zh-CN.md)
 
@@ -82,7 +82,7 @@ Five colour schemes (Frost, Rice paper, Night, Amber, Neon) and seven languages:
 
 ## Quick start
 
-1. Download `SloppyPlayer-1.0.0-win64.zip` from [Releases](https://github.com/Akureyri-i/sloppy-player/releases/latest) and unzip it anywhere.
+1. Download `SloppyPlayer-1.1.0-win64.zip` from [Releases](https://github.com/Akureyri-i/sloppy-player/releases/latest) and unzip it anywhere.
 2. Run `SloppyPlayer.exe` and open a score (or drag it onto the window).
 3. Click **Listen** to hear the arrangement.
 4. Press **F1**, switch to Roblox within 3 seconds and hold the guitar. **F2** pauses, **F3** stops.
@@ -144,12 +144,12 @@ Python 3.12, 64-bit, on Windows.
 
 ```
 python -m venv .venv
-.venv\Scripts\python -m pip install torch==2.8.0 -r requirements.txt -r requirements-model.txt
-.venv\Scripts\python tools/setup_model.py --install --cpu
+.venv\Scripts\python -m pip install -r requirements.txt -r requirements-model.txt
+.venv\Scripts\python tools/setup_model.py --install
 .venv\Scripts\python launch.py
 ```
 
-`setup_model.py` downloads the official M2BERT checkpoint and checks its SHA-256. Without it the player still runs and arranges without the model.
+`setup_model.py --install` downloads the official M2BERT checkpoint, checks its SHA-256 and converts it to ONNX (this step installs PyTorch and Transformers; the player itself runs the model with ONNX Runtime). Without the model the player still runs and arranges without it.
 
 Tests: `.venv\Scripts\python -m unittest discover -s tests`
 
@@ -157,7 +157,6 @@ Release build:
 
 ```
 .venv\Scripts\python -m pip install pyinstaller
-.venv\Scripts\python tools/export_encoder_weights.py
 .venv\Scripts\python tools/build_exe.py
 ```
 
@@ -189,7 +188,7 @@ Sloppy Player stands on the following work. Details and licenses: [THIRD_PARTY.m
 - [ml3czus-autoplayer](https://github.com/ml3czus/ml3czus-autoplayer) by @ml3czus_: the sheet format Sloppy Player reads and writes.
 - [MIDIPlusPlus](https://github.com/Zephkek/MIDIPlusPlus): its key-sending code was studied as a reference.
 - MusicXML (W3C Music Notation Community Group).
-- PySide6 / Qt, OR-Tools, PyTorch, Transformers, safetensors, NumPy, mido, keyboard, tinysoundfont, PyInstaller.
+- PySide6 / Qt, OR-Tools, ONNX Runtime, NumPy, mido, keyboard, tinysoundfont, PyInstaller; PyTorch, Transformers, safetensors and ONNX to convert and train the models.
 
 ## License
 

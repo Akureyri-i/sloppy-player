@@ -85,43 +85,52 @@ def build_edge_head(use_model=True):
     return EdgeHead()
 
 
+def edge_metadata(path):
+    """The head's JSON next to its weights, checked."""
+    metadata=json.loads(Path(path).with_suffix('.json').read_text(encoding='utf8'))
+    if metadata['edge_version']!=EDGE_VERSION:raise ModelUnavailable(tr('error.edges.version'))
+    temperature=metadata.get('temperature')
+    if not isinstance(temperature,(float,int)) or not math.isfinite(temperature) or temperature<=0:
+        raise ModelUnavailable(tr('error.edges.temperature'))
+    return metadata
+
+
 @lru_cache(maxsize=2)
 def load_edge_head(path_string):
-    import os
-    import torch
+    """The PyTorch head from its safetensors weights (training and ONNX export)."""
     from safetensors.torch import load_file
     from safetensors import SafetensorError
-    # Use the same CPU reduction order whether encoder features came from disk
-    # or a fresh forward pass. Tiny score differences otherwise invalidate the
-    # byte-keyed layout cache after restarting the application.
-    torch.set_num_threads(min(4,os.cpu_count() or 1))
     path=Path(path_string)
     if not path.is_file():raise ModelUnavailable(tr('error.edges.missing'))
     head=build_edge_head()
     try:head.load_state_dict(load_file(path),strict=True)
     except SafetensorError as exc:raise ModelUnavailable(tr('error.edges.broken')) from exc
     head.eval()
-    metadata=json.loads(path.with_suffix('.json').read_text(encoding='utf8'))
-    if metadata['edge_version']!=EDGE_VERSION:raise ModelUnavailable(tr('error.edges.version'))
-    temperature=metadata.get('temperature')
-    if not isinstance(temperature,(float,int)) or not math.isfinite(temperature) or temperature<=0:
-        raise ModelUnavailable(tr('error.edges.temperature'))
-    digest=hashlib.sha256(path.read_bytes()).hexdigest()
-    return head,metadata,digest
+    return head,edge_metadata(path),hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def predict_edges(notes,features,path=MODEL_DIR/'voice_edges.safetensors'):
+@lru_cache(maxsize=2)
+def edge_session(path_string):
+    """The head exported to ONNX (tools/export_onnx.py), as the player runs it."""
+    from .music_model import onnx_session
+    path=Path(path_string)
+    if not path.is_file():raise ModelUnavailable(tr('error.edges.missing'))
+    metadata=edge_metadata(path)
+    try:session=onnx_session(path)
+    except (RuntimeError,ValueError) as exc:raise ModelUnavailable(tr('error.edges.broken')) from exc
+    return session,metadata,hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def predict_edges(notes,features,path=MODEL_DIR/'voice_edges.onnx'):
     checkpoint(tr('progress.edges'))
-    import torch
-    pairs=candidate_pairs(notes);geometry=geometric_features(notes,pairs)
-    head,metadata,digest=load_edge_head(str(path))
+    pairs=candidate_pairs(notes);geometry=geometric_features(notes,pairs).astype(np.float32)
+    session,metadata,digest=edge_session(str(path))
     predictions=[]
     for start in range(0,len(pairs),4096):
         p=pairs[start:start+4096]
-        with torch.inference_mode():
-            logits=head(torch.from_numpy(features[p[:,0]]),torch.from_numpy(features[p[:,1]]),
-                        torch.from_numpy(geometry[start:start+4096]))
-            predictions.extend(torch.sigmoid(logits/metadata['temperature']).numpy().tolist())
+        logits=session.run(None,{'left':features[p[:,0]],'right':features[p[:,1]],
+                                 'geometry':geometry[start:start+4096]})[0]
+        predictions.extend((1/(1+np.exp(-logits/metadata['temperature']))).tolist())
     if not np.isfinite(predictions).all():raise ModelUnavailable(tr('error.edges.output'))
     return pairs,np.asarray(predictions,np.float32),{'head_sha256':digest,
         'training_domain':metadata['training_domain'],'temperature':metadata['temperature']}

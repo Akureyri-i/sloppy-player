@@ -93,8 +93,16 @@ def build_role_head(use_model=True):
     return RoleHead()
 
 
+def role_metadata(path):
+    metadata = json.loads(Path(path).with_suffix('.json').read_text(encoding='utf8'))
+    if metadata['role_version'] != ROLE_VERSION:
+        raise ModelUnavailable(tr('error.roles.version'))
+    return metadata
+
+
 @lru_cache(maxsize=2)
 def load_role_head(path_string):
+    """The PyTorch head from its safetensors weights (training and ONNX export)."""
     from safetensors.torch import load_file
     path = Path(path_string)
     if not path.is_file():
@@ -102,19 +110,26 @@ def load_role_head(path_string):
     head = build_role_head()
     head.load_state_dict(load_file(path), strict=True)
     head.eval()
-    metadata = json.loads(path.with_suffix('.json').read_text(encoding='utf8'))
-    if metadata['role_version'] != ROLE_VERSION:
-        raise ModelUnavailable(tr('error.roles.version'))
-    return head, metadata
+    return head, role_metadata(path)
 
 
-def predict_roles(notes, features, path=MODEL_DIR/'voice_roles.safetensors'):
+@lru_cache(maxsize=2)
+def role_session(path_string):
+    """The head exported to ONNX (tools/export_onnx.py), as the player runs it."""
+    from .music_model import onnx_session
+    path = Path(path_string)
+    if not path.is_file():
+        raise ModelUnavailable(tr('error.roles.missing'))
+    return onnx_session(path), role_metadata(path)
+
+
+def predict_roles(notes, features, path=MODEL_DIR/'voice_roles.onnx'):
     """[len(notes), 3] probabilities (ROLES order); notes in onset order, row-aligned with features."""
-    import torch
-    head, metadata = load_role_head(str(path))
-    with torch.inference_mode():
-        logits = head(torch.from_numpy(features)[None], torch.from_numpy(geometric_features(notes))[None])[0]
-        return torch.softmax(logits/metadata['temperature'], dim=-1).numpy()
+    session, metadata = role_session(str(path))
+    logits = session.run(None, {'features': features[None].astype(np.float32),
+                                'geometry': geometric_features(notes)[None].astype(np.float32)})[0][0]/metadata['temperature']
+    e = np.exp(logits-logits.max(axis=-1, keepdims=True))
+    return e/e.sum(axis=-1, keepdims=True)
 
 
 def rule_roles(notes, preferred=None):

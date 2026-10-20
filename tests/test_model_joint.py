@@ -131,22 +131,35 @@ class JointTests(unittest.TestCase):
 
 
 class RealModelTests(unittest.TestCase):
-    @unittest.skipUnless(Path('models/m2bert/voice_edges.safetensors').exists() and importlib.util.find_spec('torch'),
-                         'trained head or PyTorch not installed')
+    @unittest.skipUnless(Path('models/m2bert/voice_edges.onnx').exists() and importlib.util.find_spec('onnxruntime'),
+                         'exported head or ONNX Runtime not installed')
     def test_cached_features_use_stable_scores_after_restart(self):
-        import torch
-        from guitar_player.voice_edges import load_edge_head
+        from guitar_player.voice_edges import edge_session
         ns=[note(i*2+j,p,i*.25) for i in range(8) for j,p in enumerate([50+i%4,75+i%5])]
         h=np.random.default_rng(8721).normal(size=(len(ns),768)).astype(np.float32)
-        original=torch.get_num_threads()
-        try:
-            torch.set_num_threads(1);load_edge_head.cache_clear()
-            _,a,_=predict_edges(ns,h)
-            torch.set_num_threads(8);load_edge_head.cache_clear()
-            _,b,_=predict_edges(ns,h)
-            np.testing.assert_array_equal(a,b)
-        finally:
-            torch.set_num_threads(original);load_edge_head.cache_clear()
+        edge_session.cache_clear();_,a,_=predict_edges(ns,h)
+        edge_session.cache_clear();_,b,_=predict_edges(ns,h)       # a new session, as after a restart
+        np.testing.assert_array_equal(a,b)
+
+    @unittest.skipUnless(all(Path('models/m2bert/'+n).exists() for n in ('encoder.onnx','voice_edges.safetensors','voice_edges.onnx'))
+                         and importlib.util.find_spec('torch') and importlib.util.find_spec('onnxruntime'),
+                         'needs the exported models, PyTorch and ONNX Runtime')
+    def test_onnx_matches_pytorch(self):
+        from guitar_player import music_model
+        from guitar_player.voice_edges import load_edge_head
+        import torch
+        s=song([note(i*2+j,p,i*.25) for i in range(40) for j,p in enumerate([50+i%7,75+i%5])])
+        encoded=music_model.encode_notes(s,s.notes)
+        expected=music_model.M2BertFeatures(device='cpu').extract(encoded)
+        got=music_model.OnnxFeatures().extract(encoded)
+        self.assertLess(float(np.abs(got-expected).max()),1e-3)
+        index={n.id:n for n in s.notes};ns=[index[int(i)] for i in encoded.ids]
+        pairs,p,_=predict_edges(ns,expected)
+        head,metadata,_=load_edge_head('models/m2bert/voice_edges.safetensors')
+        with torch.inference_mode():
+            q=torch.sigmoid(head(*(torch.from_numpy(x) for x in (expected[pairs[:,0]],expected[pairs[:,1]],
+                geometric_features(ns,pairs).astype(np.float32))))/metadata['temperature']).numpy()
+        self.assertLess(float(np.abs(p-q).max()),1e-5)
 
     @unittest.skipUnless(Path('models/m2bert/encoder.safetensors').exists() and Path('models/m2bert/model_best.ckpt').exists(),
                          'both encoder files needed')
@@ -213,7 +226,8 @@ class SpeedPathTests(unittest.TestCase):
             def extract(self,encoded):raise AssertionError('should stop before inference')
         s=song([note(i,60+i,i*.25) for i in range(4)])
         with tempfile.TemporaryDirectory() as directory,patch.object(music,'CACHE_DIR',Path(directory)),\
-                patch.object(music,'_backend',None),patch.object(music,'M2BertFeatures',SlowModel):
+                patch.object(music,'_backend',None),patch.object(music,'M2BertFeatures',SlowModel),\
+                patch.object(music,'OnnxFeatures',SlowModel):
             with task_context(cancel,lambda stage:None),self.assertRaises(Cancelled):
                 music.get_features(s,s.notes,use_cache=False)
             self.assertIsInstance(music._backend,SlowModel)

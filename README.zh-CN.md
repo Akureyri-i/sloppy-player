@@ -14,7 +14,7 @@
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-4a4ed3?style=flat-square)
 ![Vibe coded](https://img.shields.io/badge/vibe-coded-8d91f6?style=flat-square)
 
-[![下载](https://img.shields.io/badge/下载-SloppyPlayer%201.0.0-4a4ed3?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Akureyri-i/sloppy-player/releases/latest)
+[![下载](https://img.shields.io/badge/下载-SloppyPlayer%201.1.0-4a4ed3?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Akureyri-i/sloppy-player/releases/latest)
 [![使用指南](https://img.shields.io/badge/使用指南-阅读-6f73ee?style=for-the-badge)](USER_GUIDE.zh-CN.md)
 [![English](https://img.shields.io/badge/English-read-8d91f6?style=for-the-badge)](README.md)
 
@@ -82,7 +82,7 @@
 
 ## 快速上手
 
-1. 在 [Releases](https://github.com/Akureyri-i/sloppy-player/releases/latest) 下载 `SloppyPlayer-1.0.0-win64.zip`，解压到任意位置。
+1. 在 [Releases](https://github.com/Akureyri-i/sloppy-player/releases/latest) 下载 `SloppyPlayer-1.1.0-win64.zip`，解压到任意位置。
 2. 运行 `SloppyPlayer.exe`，打开乐谱（或把文件拖进窗口）。
 3. 点「试听」听一遍编配结果。
 4. 按 **F1**，3 秒内切到 Roblox 并拿好吉他。**F2** 暂停，**F3** 停止。
@@ -144,12 +144,12 @@
 
 ```
 python -m venv .venv
-.venv\Scripts\python -m pip install torch==2.8.0 -r requirements.txt -r requirements-model.txt
-.venv\Scripts\python tools/setup_model.py --install --cpu
+.venv\Scripts\python -m pip install -r requirements.txt -r requirements-model.txt
+.venv\Scripts\python tools/setup_model.py --install
 .venv\Scripts\python launch.py
 ```
 
-`setup_model.py` 从官方地址下载 M2BERT 权重并校验 SHA-256。没有它也能运行，只是编配不使用模型。
+`setup_model.py --install` 从官方地址下载 M2BERT 权重、校验 SHA-256，并转换成 ONNX（这一步会安装 PyTorch 和 Transformers；播放器本身用 ONNX Runtime 运行模型）。没有模型也能运行，只是编配不使用模型。
 
 测试：`.venv\Scripts\python -m unittest discover -s tests`
 
@@ -157,7 +157,6 @@ python -m venv .venv
 
 ```
 .venv\Scripts\python -m pip install pyinstaller
-.venv\Scripts\python tools/export_encoder_weights.py
 .venv\Scripts\python tools/build_exe.py
 ```
 
@@ -189,7 +188,7 @@ Sloppy Player 建立在以下工作之上。详情与许可见 [THIRD_PARTY.md](
 - [ml3czus-autoplayer](https://github.com/ml3czus/ml3czus-autoplayer)（@ml3czus_）：Sloppy Player 读写的乐谱格式。
 - [MIDIPlusPlus](https://github.com/Zephkek/MIDIPlusPlus)：参考了它的发键代码。
 - MusicXML（W3C 乐谱记谱社区组）。
-- PySide6 / Qt、OR-Tools、PyTorch、Transformers、safetensors、NumPy、mido、keyboard、tinysoundfont、PyInstaller。
+- PySide6 / Qt、OR-Tools、ONNX Runtime、NumPy、mido、keyboard、tinysoundfont、PyInstaller；转换和训练模型用到 PyTorch、Transformers、safetensors 和 ONNX。
 
 ## 许可证
 

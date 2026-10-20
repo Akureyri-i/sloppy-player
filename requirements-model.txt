@@ -1,3 +1,2 @@
-# Install torch GPU/CPU separately with tools/setup_model.py --install.
-transformers==4.51.3
-safetensors==0.6.2
+# Runs the model: ONNX Runtime on the CPU (tools/setup_model.py --install also creates encoder.onnx).
+onnxruntime==1.31.0

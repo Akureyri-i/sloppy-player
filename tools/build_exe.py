@@ -1,8 +1,8 @@
 """Build the Windows release: a portable folder with SloppyPlayer.exe, zipped.
 
-Run from the repository root in a build environment that has PyInstaller and the
-CPU build of PyTorch, with the model files in models/m2bert/ (see README, Build from
-source):
+Run from the repository root in a build environment that has PyInstaller and ONNX
+Runtime, with the exported model files in models/m2bert/ (tools/setup_model.py --install;
+see README, Build from source):
 
   python tools/build_exe.py [--documents <folder with README.md, LICENSE, ...>]
 
@@ -12,11 +12,13 @@ package are copied to licenses/.
 """
 import argparse
 import importlib.metadata
+import json
 import os
 from pathlib import Path
 import re
 import shutil
 import struct
+import subprocess
 import sys
 import tempfile
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -25,10 +27,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from guitar_player import __version__  # noqa: E402
 
-MODEL_FILES = ('encoder.safetensors', 'CP.pkl', 'config.json', 'voice_edges.safetensors', 'voice_edges.json',
-               'voice_roles.safetensors', 'voice_roles.json')
+MODEL_FILES = ('encoder.onnx', 'CP.pkl', 'config.json', 'voice_edges.onnx', 'voice_edges.json', 'voice_roles.onnx',
+               'voice_roles.json')
 # Not used by the player; keep them out even when installed in the build environment.
-EXCLUDED = ('scipy', 'pyaudio', 'tkinter', 'matplotlib', 'IPython', 'pytest', 'lxml', 'soundcard', 'PySide6.QtNetwork',
+# The models run on ONNX Runtime; PyTorch and Transformers are only for exporting and training.
+EXCLUDED = ('torch', 'transformers', 'safetensors', 'tokenizers', 'huggingface_hub', 'sympy', 'networkx', 'onnx',
+            'scipy', 'pyaudio', 'tkinter', 'matplotlib', 'IPython', 'pytest', 'lxml', 'soundcard', 'PySide6.QtNetwork',
             'PySide6.QtQml', 'PySide6.QtQuick', 'PySide6.QtPdf', 'PySide6.QtOpenGL')
 # The READMEs are for the repository page (their images are not in the zip).
 DOCUMENTS = ('LICENSE', 'THIRD_PARTY.md', 'USER_GUIDE.md', 'USER_GUIDE.zh-CN.md', 'CHANGELOG.md')
@@ -95,6 +99,26 @@ def copy_licenses(dists, target):
     (target/'README.txt').write_text('\n'.join(index)+'\n', encoding='utf-8')
 
 
+def self_check(exe, work):
+    """Run the built program on a score wider than the guitar and require the model to take part."""
+    import mido
+    song = mido.MidiFile()
+    track = mido.MidiTrack()
+    song.tracks.append(track)
+    for k in range(48):
+        pitch = 30+(k*7) % 66                 # 30..95: needs octave moves, so the model runs
+        track += [mido.Message('note_on', note=pitch, velocity=80, time=0 if k == 0 else 120),
+                  mido.Message('note_off', note=pitch, velocity=0, time=240)]
+    song.save(work/'check.mid')
+    env = dict(os.environ, APPDATA=str(work/'appdata'), LOCALAPPDATA=str(work/'localappdata'))
+    subprocess.run([str(exe), '--analyze', str(work/'check.mid'), '--report', str(work/'check.json')], env=env, check=True)
+    stats = json.loads((work/'check.json').read_text(encoding='utf-8'))['stats']
+    joint = stats.get('joint') or {}
+    if not joint.get('model_used'):
+        raise SystemExit(f"The built program arranged without the model: {joint.get('fallback_reason')}")
+    print('self-check: the model ran in the built program')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', type=Path, default=ROOT/'dist')
@@ -119,6 +143,7 @@ def main():
                                              if 'nvidia' not in p.lower() and 'cuda' not in p.lower())
         PyInstaller.__main__.run(options + [str(ROOT/'launch.py')])
         folder = work/'dist'/'SloppyPlayer'
+        self_check(folder/'SloppyPlayer.exe', work)
         copy_licenses(bundled_distributions(folder/'_internal', work/'build'/'SloppyPlayer'/'PYZ-00.toc'), folder/'licenses')
         for document in DOCUMENTS:
             if (args.documents/document).is_file():

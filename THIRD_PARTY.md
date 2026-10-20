@@ -4,10 +4,10 @@ Sloppy Player's own code is licensed under GPL-3.0-or-later (see [LICENSE](LICEN
 
 ## Model files shipped with the program
 
-**M2BERT encoder** (`models/m2bert/encoder.safetensors` in the release, `CP.pkl`)
+**M2BERT encoder** (`models/m2bert/encoder.onnx` in the release, `CP.pkl`)
 Jun-You Wang, Li Su. *Improving BERT for symbolic music understanding using token denoising and pianoroll prediction.* ISMIR 2025.
 Code: <https://github.com/york135/M2BERT> · Weights: <https://github.com/york135/M2BERT_files>
-The official repositories carry no license file. The author, Jun-You Wang, confirmed in writing that the model and code may be used and redistributed without license restrictions, asking only that the paper be cited and the work credited. This permission is not an open-source license and does not extend to anything else listed here. `encoder.safetensors` is the `state_dict` of the official `model_best.ckpt` (SHA-256 `cf15015f…40f63`), written by `tools/export_encoder_weights.py`; the optimizer state is left out.
+The official repositories carry no license file. The author, Jun-You Wang, confirmed in writing that the model and code may be used and redistributed without license restrictions, asking only that the paper be cited and the work credited. This permission is not an open-source license and does not extend to anything else listed here. `encoder.onnx` is the network of the official `model_best.ckpt` (SHA-256 `cf15015f…40f63`) exported to ONNX by `tools/export_onnx.py`; the optimizer state is left out.
 
 **ModernBERT configuration** (`models/m2bert/config.json`)
 Warner et al. *Smarter, Better, Faster, Longer: A Modern Bidirectional Encoder for Fast, Memory Efficient, and Long Context Finetuning and Inference.* 2024. <https://huggingface.co/answerdotai/ModernBERT-base>, Apache-2.0.
@@ -49,14 +49,12 @@ The release folder contains these packages as built by PyInstaller; their licens
 | Python 3.12 | PSF License |
 | PySide6 / Qt 6 (Core, Gui, Widgets) | LGPL-3.0. The Qt libraries are separate DLLs in the folder and can be replaced. Qt source: <https://code.qt.io> |
 | OR-Tools | Apache-2.0 |
-| PyTorch (CPU) | BSD-3-Clause |
-| Transformers, tokenizers, huggingface_hub, safetensors | Apache-2.0 |
+| ONNX Runtime | MIT |
 | NumPy | BSD-3-Clause |
 | pandas (used by OR-Tools) | BSD-3-Clause |
 | protobuf | BSD-3-Clause |
 | mido, keyboard | MIT |
 | tinysoundfont (TinySoundFont, stb_vorbis) | MIT |
-| sympy, mpmath, networkx, Jinja2 (used by PyTorch) | BSD |
 | PyInstaller bootloader | GPL-2.0 with a bootloader exception |
 
 Exact versions are in `requirements.txt`, `requirements-model.txt` and the `licenses/` folder names.

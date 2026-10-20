@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Smaller download: the model now runs on ONNX Runtime instead of PyTorch (zip 436 → 308 MB, 841 → 473 MB unpacked). Arrangements are the same.
+- Guitar style no longer fails when cached analysis exists but PyTorch is not installed (running from source).
+
 ## 1.0.0
 
 First release.

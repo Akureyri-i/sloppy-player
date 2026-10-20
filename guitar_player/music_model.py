@@ -178,24 +178,59 @@ class M2BertFeatures:
         # No cancellation check here: a loaded model is kept for the next request
         # instead of being thrown away (loading takes far longer than inference).
 
-    def extract(self,encoded,length=1024,overlap=256):
+    def run(self,ids):
         import torch
-        count=len(encoded.ids)
-        total=np.zeros((count,768),np.float32);weight=np.zeros(count,np.float32)
-        starts=window_starts(count,length,overlap)
-        for number,start in enumerate(starts,1):
-            checkpoint(tr('progress.context', done=number, total=len(starts)))
-            end=min(count,start+length)
-            ids=torch.as_tensor(encoded.tokens[start:end][None],device=self.device)
-            with torch.inference_mode():
-                result=self.network(ids)[0].float().cpu().numpy()
-            checkpoint()
-            # Downweight each window's less-contextual edges; keep every note.
-            j=np.arange(end-start)
-            w=np.minimum(np.minimum(j+1,end-start-j),max(1,overlap//2)).astype(np.float32)
-            total[start:end]+=result*w[:,None];weight[start:end]+=w
-        if count:total/=weight[:,None]
-        return total
+        with torch.inference_mode():
+            return self.network(torch.as_tensor(ids,device=self.device))[0].float().cpu().numpy()
+
+    def extract(self,encoded,length=1024,overlap=256):
+        return extract(self,encoded,length,overlap)
+
+
+class OnnxFeatures:
+    """The encoder exported to ONNX (tools/export_onnx.py), run by ONNX Runtime on the CPU.
+    What the player ships; PyTorch is then only needed to export and to train."""
+    device='cpu'
+
+    def __init__(self,directory=MODEL_DIR):
+        checkpoint(tr('progress.model'))
+        directory=Path(directory)
+        if not (directory/'encoder.onnx').is_file():raise ModelUnavailable(tr('error.model.weights'))
+        self.vocab=vocabulary(directory)
+        self.session=onnx_session(directory/'encoder.onnx')
+
+    def run(self,ids):
+        return self.session.run(None,{'ids':ids.astype(np.int64)})[0][0]
+
+    def extract(self,encoded,length=1024,overlap=256):
+        return extract(self,encoded,length,overlap)
+
+
+def onnx_session(path):
+    """ONNX Runtime on the CPU with a fixed thread count: the same input gives the same bytes
+    on every run, which the layout cache (keyed by link scores) relies on."""
+    import onnxruntime as ort
+    options=ort.SessionOptions()
+    options.intra_op_num_threads=min(4,os.cpu_count() or 1);options.inter_op_num_threads=1
+    return ort.InferenceSession(str(path),options,providers=['CPUExecutionProvider'])
+
+
+def extract(backend,encoded,length=1024,overlap=256):
+    """Features of every note: overlapping windows, each window's edges weighted down."""
+    count=len(encoded.ids)
+    total=np.zeros((count,768),np.float32);weight=np.zeros(count,np.float32)
+    starts=window_starts(count,length,overlap)
+    for number,start in enumerate(starts,1):
+        checkpoint(tr('progress.context', done=number, total=len(starts)))
+        end=min(count,start+length)
+        result=backend.run(encoded.tokens[start:end][None])
+        checkpoint()
+        # Downweight each window's less-contextual edges; keep every note.
+        j=np.arange(end-start)
+        w=np.minimum(np.minimum(j+1,end-start-j),max(1,overlap//2)).astype(np.float32)
+        total[start:end]+=result*w[:,None];weight[start:end]+=w
+    if count:total/=weight[:,None]
+    return total
 
 
 def preload():
@@ -214,16 +249,21 @@ def _model():
     global _backend
     with _load_lock:
         if _backend is None:
-            try:_backend=M2BertFeatures()
+            try:_backend=OnnxFeatures() if onnx_encoder() else M2BertFeatures()
             except (ImportError,OSError,ValueError,RuntimeError) as exc:
                 raise ModelUnavailable(str(exc)) from exc
         return _backend
 
 
+def onnx_encoder():
+    """The release runs the exported encoder; a source checkout without it uses PyTorch."""
+    return (MODEL_DIR/'encoder.onnx').is_file()
+
+
 def get_features(song,notes,use_cache=True):
     checkpoint(tr('progress.cache'))
     encoded=encode_notes(song,notes)
-    payload=json.dumps({'encoder':ENCODER_VERSION,'weights':CHECKPOINT_SHA256,
+    payload=json.dumps({'encoder':ENCODER_VERSION,'weights':CHECKPOINT_SHA256,'runtime':'onnx' if onnx_encoder() else 'torch',
         'vocab':hashlib.sha256((MODEL_DIR/'CP.pkl').read_bytes()).hexdigest(),
         'config':hashlib.sha256((MODEL_DIR/'config.json').read_bytes()).hexdigest(),
         'meters':song.meters,'tpb':song.ticks_per_beat,

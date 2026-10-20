@@ -5,7 +5,6 @@ import importlib.metadata
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -47,29 +46,33 @@ def download(url,target,expected):
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--install',action='store_true')
-    parser.add_argument('--cpu',action='store_true');parser.add_argument('--check',action='store_true')
+    parser.add_argument('--check',action='store_true')
     parser.add_argument('--report',help='Optional local installation report')
     args=parser.parse_args();folder=ROOT/'models'/'m2bert'
     if args.install:
-        index='https://download.pytorch.org/whl/'+('cpu' if args.cpu or not shutil.which('nvidia-smi') else 'cu128')
-        subprocess.run([sys.executable,'-m','pip','install','torch==2.8.0','--index-url',index],check=True)
-        subprocess.run([sys.executable,'-m','pip','install','-r',str(ROOT/'requirements.txt'),'-r',str(ROOT/'requirements-model.txt')],check=True)
+        # PyTorch (CPU) and Transformers only convert the official checkpoint to ONNX here;
+        # the player itself runs the models with ONNX Runtime (requirements-model.txt).
+        subprocess.run([sys.executable,'-m','pip','install','torch==2.8.0','--index-url','https://download.pytorch.org/whl/cpu'],check=True)
+        subprocess.run([sys.executable,'-m','pip','install','-r',str(ROOT/'requirements.txt'),'-r',str(ROOT/'requirements-model.txt'),
+                        '-r',str(ROOT/'requirements-export.txt')],check=True)
     for name,(url,expected) in FILES.items():
         target=folder/name
         if target.exists() and sha(target)==expected:continue
         if args.check:raise SystemExit(f'Missing or invalid: {name}')
         print('Downloading',name,flush=True)
         download(url,target,expected)
-    for name in ('voice_edges.safetensors','voice_edges.json','voice_roles.safetensors','voice_roles.json'):
+    for name in ('voice_edges.onnx','voice_edges.json','voice_roles.onnx','voice_roles.json'):
         if not (folder/name).is_file():raise SystemExit('Missing project-trained voice head: '+name)
-    from guitar_player.music_model import M2BertFeatures
-    from guitar_player.voice_edges import load_edge_head
-    from guitar_player.roles import load_role_head
-    model=M2BertFeatures(device='cpu' if args.cpu else None);_,_,head_hash=load_edge_head(str(folder/'voice_edges.safetensors'))
-    load_role_head(str(folder/'voice_roles.safetensors'))
-    result=dict(device=model.device,weights={name:sha(folder/name) for name in FILES},head_sha256=head_hash,
-                role_head_sha256=sha(folder/'voice_roles.safetensors'),
-                packages={name:importlib.metadata.version(name) for name in ('torch','transformers','numpy','ortools','safetensors')})
+    if not (folder/'encoder.onnx').is_file():
+        if args.check:raise SystemExit('Missing: encoder.onnx (run tools/setup_model.py --install)')
+        subprocess.run([sys.executable,str(ROOT/'tools'/'export_onnx.py'),'--check'],check=True)
+    from guitar_player.music_model import OnnxFeatures
+    from guitar_player.voice_edges import edge_session
+    from guitar_player.roles import role_session
+    OnnxFeatures();_,_,head_hash=edge_session(str(folder/'voice_edges.onnx'));role_session(str(folder/'voice_roles.onnx'))
+    result=dict(weights={name:sha(folder/name) for name in FILES},encoder_onnx_sha256=sha(folder/'encoder.onnx'),
+                head_sha256=head_hash,role_head_sha256=sha(folder/'voice_roles.onnx'),
+                packages={name:importlib.metadata.version(name) for name in ('onnxruntime','numpy','ortools')})
     if args.report:
         target=Path(args.report);target.parent.mkdir(parents=True,exist_ok=True)
         target.write_text(json.dumps(result,indent=2),encoding='utf8')

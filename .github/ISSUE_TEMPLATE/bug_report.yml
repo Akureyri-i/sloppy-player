@@ -10,8 +10,8 @@ body:
     id: version
     attributes:
       label: Version
-      description: From the zip name, e.g. SloppyPlayer-1.0.0-win64.zip.
-      placeholder: 1.0.0
+      description: From the zip name, e.g. SloppyPlayer-1.1.0-win64.zip.
+      placeholder: 1.1.0
     validations:
       required: true
   - type: dropdown

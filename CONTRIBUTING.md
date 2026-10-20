@@ -14,11 +14,11 @@ python -m venv .venv
 .venv\Scripts\python launch.py
 ```
 
-This runs the player without the model; arrangements then use the rule-based joint optimiser. For the model:
+This runs the player without the model; arrangements then use the rule-based joint optimiser. For the model (the setup converts the official checkpoint to ONNX and installs PyTorch for that step; the player runs it with ONNX Runtime):
 
 ```
-.venv\Scripts\python -m pip install torch==2.8.0 -r requirements-model.txt
-.venv\Scripts\python tools/setup_model.py --install --cpu
+.venv\Scripts\python -m pip install -r requirements-model.txt
+.venv\Scripts\python tools/setup_model.py --install
 ```
 
 ## Tests

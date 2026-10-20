@@ -36,7 +36,8 @@ class RoleTests(unittest.TestCase):
         self.assertEqual([i for i in range(7) if p[i, 0] == 1], [2, 5])
         self.assertTrue(np.allclose(p.sum(1), 1))
 
-    @unittest.skipUnless(importlib.util.find_spec('torch'), 'PyTorch not installed')
+    @unittest.skipUnless(all(importlib.util.find_spec(m) for m in ('torch', 'onnx', 'onnxruntime')),
+                         'needs PyTorch, onnx and ONNX Runtime')
     def test_head_round_trip(self):
         import torch
         from safetensors.torch import save_file
@@ -47,7 +48,12 @@ class RoleTests(unittest.TestCase):
         save_file({k: v.contiguous() for k, v in head.state_dict().items()}, str(path))
         path.with_suffix('.json').write_text(json.dumps({'role_version': roles.ROLE_VERSION, 'temperature': 1.5}))
         features = np.random.default_rng(0).normal(size=(7, 768)).astype(np.float32)
-        p = roles.predict_roles(self.notes, features, path)
+        with torch.inference_mode():
+            torch.onnx.export(head, (torch.randn(1, 7, 768), torch.randn(1, 7, roles.GEOMETRY)), str(path.with_suffix('.onnx')),
+                              input_names=['features', 'geometry'], output_names=['logits'],
+                              dynamic_axes={'features': {1: 'notes'}, 'geometry': {1: 'notes'}, 'logits': {1: 'notes'}},
+                              opset_version=17, dynamo=False)
+        p = roles.predict_roles(self.notes, features, path.with_suffix('.onnx'))
         self.assertEqual(p.shape, (7, 3))
         self.assertTrue(np.allclose(p.sum(1), 1, atol=1e-5))
 

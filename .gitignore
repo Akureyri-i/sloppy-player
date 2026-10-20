@@ -11,6 +11,7 @@ dist/
 # Downloaded or generated model files (see tools/setup_model.py, tools/export_encoder_weights.py)
 /models/m2bert/model_best.ckpt
 /models/m2bert/encoder.safetensors
+/models/m2bert/encoder.onnx
 /models/m2bert/*.part
 
 # Training data and results (see models/m2bert/MODEL_CARD.md)
